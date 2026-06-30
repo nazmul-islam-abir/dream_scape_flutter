@@ -1,28 +1,29 @@
-import 'package:dream_scape/home_screen.dart';
-import 'package:dream_scape/my_roadmaps_screen.dart';
 import 'package:dream_scape/screens/auth/firebase_auth_service.dart';
 import 'package:dream_scape/screens/auth/login_screen.dart';
 import 'package:dream_scape/screens/auth/profile_screen.dart';
+import 'package:dream_scape/screens/explorer_screen.dart';
+import 'package:dream_scape/screens/daily_learning_screen.dart';
+import 'package:dream_scape/screens/learning_path_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'home_screen.dart';
+import 'my_roadmaps_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // Initialize Supabase
     await Supabase.initialize(
       url: 'https://vfnjcomfshwosmgoqdqs.supabase.co',
       anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmbmpjb21mc2h3b3NtZ29xZHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTY1MjgsImV4cCI6MjA5ODIzMjUyOH0.FgjRWYX9c3gFqjsc8dnLNsBvjwsfPml3FqgzSibsKKQ',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmbmpjb21mc2h3b3NtZ29xZHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTY1MjgsImV4cCI6MjA5ODIzMjUyOH0.FgjRWYX9c3gFqjsc8dnLNsBvjwsfPml3FqgzSibsKKQ',
     );
 
     runApp(const MyApp());
@@ -197,7 +198,7 @@ class AuthWrapper extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       'Please verify your email address before continuing.\n'
-                      'Check your inbox and click the verification link.',
+                          'Check your inbox and click the verification link.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -256,7 +257,7 @@ class AuthWrapper extends StatelessWidget {
 
 // Global key to access MainNavigationScreen state from anywhere
 final GlobalKey<MainNavigationScreenState> mainNavigationKey =
-    GlobalKey<MainNavigationScreenState>();
+GlobalKey<MainNavigationScreenState>();
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -268,12 +269,20 @@ class MainNavigationScreen extends StatefulWidget {
 class MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [const HomeScreen(), const MyRoadmapsScreen()];
+  final List<Widget> _pages = [
+    const HomeScreen(),
+    const MyRoadmapsScreen(),
+    const ExplorerScreen(),
+    const DailyLearningScreen(),
+    const LearningPathScreen(),
+  ];
 
   void switchToTab(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index >= 0 && index < _pages.length) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   Future<void> _signOut() async {
@@ -384,13 +393,18 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
         ],
       ),
-      body: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          if (index >= 0 && index < _pages.length) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
         },
         destinations: const [
           NavigationDestination(
@@ -402,6 +416,21 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.folder_outlined),
             selectedIcon: Icon(Icons.folder),
             label: 'My Roadmaps',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explorer',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Learn',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.route_outlined),
+            selectedIcon: Icon(Icons.route),
+            label: 'Path',
           ),
         ],
       ),

@@ -41,52 +41,46 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBKQxukPBcwoS3mHIYIGNNE6tqeCNAupp0',
-    appId: '1:790663387405:web:399b42f1092d7f6694b844',
-    messagingSenderId: '790663387405',
-    projectId: 'dream-scape-dfde3',
-    authDomain: 'dream-scape-dfde3.firebaseapp.com',
-    storageBucket: 'dream-scape-dfde3.firebasestorage.app',
-    measurementId: 'G-MECB9VCHCM',
+    apiKey: 'AIzaSyART6YbQA5mSz5pVQB_jLf5OiKo_mu_KBw',
+    appId: '1:475364726705:web:27024c188eff5802bc4f90',
+    messagingSenderId: '475364726705',
+    projectId: 'dreamera-b079a',
+    authDomain: 'dreamera-b079a.firebaseapp.com',
+    storageBucket: 'dreamera-b079a.firebasestorage.app',
+    measurementId: 'G-D2ZQ383Z6D',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAIjpGg3EB-gRn3nHUO0ifZJeqXOW3Vg6M',
-    appId: '1:790663387405:android:50fbed2b072b806994b844',
-    messagingSenderId: '790663387405',
-    projectId: 'dream-scape-dfde3',
-    storageBucket: 'dream-scape-dfde3.firebasestorage.app',
+    apiKey: 'AIzaSyBzGhBqxp1cTq9zg-A68lqo0hCnL435dJc',
+    appId: '1:475364726705:android:31d4ba424263ac7fbc4f90',
+    messagingSenderId: '475364726705',
+    projectId: 'dreamera-b079a',
+    storageBucket: 'dreamera-b079a.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDYj2hDOaZUacHyBC0iHoDk0ZTKLL_lf7Q',
-    appId: '1:790663387405:ios:434a38bc2a1081a094b844',
-    messagingSenderId: '790663387405',
-    projectId: 'dream-scape-dfde3',
-    storageBucket: 'dream-scape-dfde3.firebasestorage.app',
-    androidClientId: '790663387405-shatafr8fbp6c94g86537ppfnht7dqkf.apps.googleusercontent.com',
-    iosClientId: '790663387405-clu8r246r3jgsd77g80d2d1q7ipops85.apps.googleusercontent.com',
-    iosBundleId: 'com.example.dreamScape',
+    apiKey: 'AIzaSyBuJc56g5sC_t8C2sJfglK1upl45DjrEQE',
+    appId: '1:475364726705:ios:a2c6bc3112de45f8bc4f90',
+    messagingSenderId: '475364726705',
+    projectId: 'dreamera-b079a',
+    storageBucket: 'dreamera-b079a.firebasestorage.app',
+    iosBundleId: 'com.example.dreamera',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDYj2hDOaZUacHyBC0iHoDk0ZTKLL_lf7Q',
-    appId: '1:790663387405:ios:434a38bc2a1081a094b844',
-    messagingSenderId: '790663387405',
-    projectId: 'dream-scape-dfde3',
-    storageBucket: 'dream-scape-dfde3.firebasestorage.app',
-    androidClientId: '790663387405-shatafr8fbp6c94g86537ppfnht7dqkf.apps.googleusercontent.com',
-    iosClientId: '790663387405-clu8r246r3jgsd77g80d2d1q7ipops85.apps.googleusercontent.com',
-    iosBundleId: 'com.example.dreamScape',
+    apiKey: 'AIzaSyBuJc56g5sC_t8C2sJfglK1upl45DjrEQE',
+    appId: '1:475364726705:ios:a2c6bc3112de45f8bc4f90',
+    messagingSenderId: '475364726705',
+    projectId: 'dreamera-b079a',
+    storageBucket: 'dreamera-b079a.firebasestorage.app',
+    iosBundleId: 'com.example.dreamera',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBKQxukPBcwoS3mHIYIGNNE6tqeCNAupp0',
-    appId: '1:790663387405:web:756010361f1705cd94b844',
-    messagingSenderId: '790663387405',
-    projectId: 'dream-scape-dfde3',
-    authDomain: 'dream-scape-dfde3.firebaseapp.com',
-    storageBucket: 'dream-scape-dfde3.firebasestorage.app',
-    measurementId: 'G-XFRDCLE1F7',
+    apiKey: 'AIzaSyART6YbQA5mSz5pVQB_jLf5OiKo_mu_KBw',
+    appId: '1:475364726705:web:bedac33ee5a2df88bc4f90',
+    messagingSenderId: '475364726705',
+    projectId: 'dreamera-b079a',
+    authDomain: 'dreamera-b079a.firebaseapp.com',
+    storageBucket: 'dreamera-b079a.firebasestorage.app',
+    measurementId: 'G-Y1HWG7WJ7M',
   );
 }
