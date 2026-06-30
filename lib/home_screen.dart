@@ -1,7 +1,10 @@
+// ============== home_screen.dart ==============
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../screens/auth/firebase_auth_service.dart';
+import '../theme/app_theme.dart';
 import 'ai_service.dart';
 import 'roadmap_explorer_screen.dart';
 import 'main.dart';
@@ -19,8 +22,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   final _supabase = Supabase.instance.client;
   final _authService = FirebaseAuthService();
-  String _loadingMessage = '';
   bool _isCancelled = false;
+
+  final List<Map<String, dynamic>> _exampleGoals = [
+    {'icon': Icons.flutter_dash, 'label': 'Flutter Development'},
+    {'icon': Icons.code, 'label': 'Python Programming'},
+    {'icon': Icons.data_usage, 'label': 'Machine Learning'},
+    {'icon': Icons.web, 'label': 'Web Development'},
+    {'icon': Icons.cloud, 'label': 'Cloud Computing'},
+    {'icon': Icons.security, 'label': 'Cybersecurity'},
+  ];
 
   Future<void> _submitData() async {
     if (_goalController.text.trim().isEmpty) {
@@ -37,10 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true;
       _isCancelled = false;
-      _loadingMessage = 'Starting roadmap generation...';
     });
 
-    // Show the loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -54,18 +63,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     try {
-      // Generate the roadmap
       final parsedJson = await AiService().generateRoadmap(
         _goalController.text.trim(),
         _selectedLevel,
       );
 
-      // Check if generation was cancelled
       if (_isCancelled || !mounted) {
         return;
       }
 
-      // Save to Supabase
       final roadMapData = {
         'user_id': userId,
         'user_goal': _goalController.text.trim(),
@@ -80,16 +86,14 @@ class _HomeScreenState extends State<HomeScreen> {
           .select()
           .single();
 
-      // Close loading dialog
       if (mounted) {
         try {
           Navigator.pop(context);
         } catch (_) {}
       }
 
-      // Show success and navigate
       if (mounted) {
-        _showSnackBar('✅ Roadmap generated successfully!', Colors.green);
+        _showSnackBar('✨ Roadmap generated successfully!', AppTheme.secondaryColor);
 
         Navigator.pushReplacement(
           context,
@@ -102,18 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {
-      // Check if it's a cancellation
-      if (e.toString().contains('cancelled')) {
-        _isCancelled = true;
-        if (mounted) {
-          try {
-            Navigator.pop(context);
-          } catch (_) {}
-        }
-        return;
-      }
-
-      // Close loading dialog if open
       if (mounted) {
         try {
           Navigator.pop(context);
@@ -126,7 +118,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _loadingMessage = '';
         });
       }
     }
@@ -138,6 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Text(message),
         backgroundColor: color,
         duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -166,163 +159,233 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.school_rounded,
-                  size: 40,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "What do you want to learn today?",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Enter your goal and we'll build a custom roadmap",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _goalController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                hintText: "e.g., Cross-Platform Flutter Basics",
-                prefixIcon: const Icon(Icons.flag_outlined),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Create Your Learning Path",
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          "Tell us what you want to learn",
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              onSubmitted: (_) => _submitData(),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedLevel,
-              items: ['Beginner', 'Intermediate', 'Advanced']
-                  .map(
-                    (lvl) => DropdownMenuItem(
+              const SizedBox(height: 24),
+
+              // Goal Input
+              TextField(
+                controller: _goalController,
+                decoration: const InputDecoration(
+                  labelText: 'What do you want to learn?',
+                  hintText: 'e.g., Flutter, Python, Machine Learning',
+                  prefixIcon: Icon(Icons.flag_outlined),
+                ),
+                onSubmitted: (_) => _submitData(),
+              ),
+              const SizedBox(height: 16),
+
+              // Example Goals
+              Text(
+                'Quick Start',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _exampleGoals.map((goal) {
+                  return ActionChip(
+                    label: Text(
+                      goal['label'],
+                      style: GoogleFonts.inter(fontSize: 12),
+                    ),
+                    avatar: Icon(goal['icon'], size: 14),
+                    onPressed: () {
+                      setState(() {
+                        _goalController.text = goal['label'];
+                      });
+                    },
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: AppTheme.borderColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    labelStyle: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+
+              // Difficulty Dropdown
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.borderColor),
+                ),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedLevel,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                    prefixIcon: Icon(Icons.signal_cellular_alt),
+                  ),
+                  items: ['Beginner', 'Intermediate', 'Advanced']
+                      .map(
+                        (lvl) => DropdownMenuItem(
                       value: lvl,
                       child: Row(
                         children: [
                           Icon(
                             _getLevelIcon(lvl),
                             color: _getLevelColor(lvl),
-                            size: 20,
+                            size: 18,
                           ),
                           const SizedBox(width: 8),
-                          Text(lvl),
+                          Text(
+                            lvl,
+                            style: GoogleFonts.inter(),
+                          ),
                         ],
                       ),
                     ),
                   )
-                  .toList(),
-              onChanged: (val) => setState(() => _selectedLevel = val!),
-              decoration: InputDecoration(
-                labelText: "Your experience level",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedLevel = val!),
+                  dropdownColor: Colors.white,
                 ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submitData,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 24),
+
+              // Generate Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 18),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Generate Roadmap',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                elevation: 2,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 16),
+
+              // Divider
+              Row(
                 children: [
-                  if (_isLoading) ...[
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                  Expanded(child: Divider(color: AppTheme.borderColor)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'or',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(_loadingMessage),
-                  ] else ...[
-                    const Icon(Icons.auto_awesome),
-                    const SizedBox(width: 12),
-                    const Text(
-                      "Build Curriculum Roadmap",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ),
+                  Expanded(child: Divider(color: AppTheme.borderColor)),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: Divider(color: Colors.grey.shade300)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'or',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              const SizedBox(height: 16),
+
+              // View Roadmaps Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _switchToMyRoadmaps,
+                  icon: const Icon(Icons.folder_outlined, size: 18),
+                  label: Text(
+                    'View My Roadmaps',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                Expanded(child: Divider(color: Colors.grey.shade300)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: _switchToMyRoadmaps,
-              icon: const Icon(Icons.folder_outlined),
-              label: const Text(
-                'View My Saved Roadmaps',
-                style: TextStyle(fontSize: 14),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.3),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: AppTheme.borderColor),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -350,13 +413,12 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Advanced':
         return Colors.red;
       default:
-        return Colors.blue;
+        return AppTheme.primaryColor;
     }
   }
 }
 
-// ===================== LOADING DIALOG WIDGET =====================
-
+// ============== Loading Dialog ==============
 class _LoadingDialog extends StatefulWidget {
   final String goal;
   final VoidCallback onCancel;
@@ -369,7 +431,6 @@ class _LoadingDialog extends StatefulWidget {
 
 class _LoadingDialogState extends State<_LoadingDialog>
     with TickerProviderStateMixin {
-  // Fixed: Using TickerProviderStateMixin instead of SingleTickerProviderStateMixin
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late AnimationController _progressController;
@@ -410,16 +471,14 @@ class _LoadingDialogState extends State<_LoadingDialog>
   void initState() {
     super.initState();
 
-    // Pulse animation for the icon
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Progress animation
     _progressController = AnimationController(
       duration: const Duration(seconds: 25),
       vsync: this,
@@ -458,227 +517,203 @@ class _LoadingDialogState extends State<_LoadingDialog>
   Widget build(BuildContext context) {
     final currentStep = _steps[_currentStep.clamp(0, _steps.length - 1)];
 
-    return WillPopScope(
-      onWillPop: () async {
-        widget.onCancel();
-        return false;
-      },
-      child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        elevation: 8,
-        backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Animated Icon
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.primary,
-                            Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.6),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        currentStep.icon,
-                        size: 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Title
-              Text(
-                'Generating Your Roadmap',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Goal
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Text(
-                  '"${widget.goal}"',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Progress Bar
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Progress',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '${(_progressValue * 100).toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: _progressValue,
-                      minHeight: 8,
-                      backgroundColor: Colors.grey.shade200,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Current Step
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.arrow_right_alt_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          currentStep.title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primaryColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.25),
+                          blurRadius: 16,
+                          spreadRadius: 4,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 28),
-                      child: Text(
-                        currentStep.description,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          height: 1.4,
-                        ),
+                    child: Icon(
+                      currentStep.icon,
+                      size: 32,
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+
+            Text(
+              'Generating Your Roadmap',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.borderColor),
+              ),
+              child: Text(
+                '"${widget.goal}"',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progress',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '${(_progressValue * 100).toStringAsFixed(0)}%',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Estimated time
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 16,
-                    color: Colors.grey.shade500,
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: _progressValue,
+                    minHeight: 4,
+                    backgroundColor: AppTheme.borderColor,
+                    color: AppTheme.primaryColor,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Estimated time: 15-30 seconds',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_right_alt_rounded,
+                        color: AppTheme.primaryColor,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        currentStep.title,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: Text(
+                      currentStep.description,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 14),
 
-              // Cancel Button
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: widget.onCancel,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade300),
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.timer_outlined,
+                  size: 13,
+                  color: AppTheme.textLight,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Estimated time: 15-30 seconds',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppTheme.textLight,
                   ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: widget.onCancel,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: AppTheme.borderColor),
+                  ),
+                ),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

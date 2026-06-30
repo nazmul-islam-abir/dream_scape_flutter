@@ -4,69 +4,50 @@ import 'package:dream_scape/screens/auth/profile_screen.dart';
 import 'package:dream_scape/screens/explorer_screen.dart';
 import 'package:dream_scape/screens/daily_learning_screen.dart';
 import 'package:dream_scape/screens/learning_path_screen.dart';
+import 'package:dream_scape/screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'home_screen.dart';
 import 'my_roadmaps_screen.dart';
+import 'theme/app_theme.dart';
+
+import 'widgets/bottom_nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FirebaseApp? app;
   try {
-    await Firebase.initializeApp(
+    app = await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  } catch (e) {
+    if (e.toString().contains('duplicate-app')) {
+      try {
+        app = Firebase.app();
+      } catch (innerError) {
+        print('Error getting existing Firebase app: $innerError');
+      }
+    } else {
+      print('Firebase initialization error: $e');
+    }
+  }
 
+  try {
     await Supabase.initialize(
       url: 'https://vfnjcomfshwosmgoqdqs.supabase.co',
       anonKey:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmbmpjb21mc2h3b3NtZ29xZHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTY1MjgsImV4cCI6MjA5ODIzMjUyOH0.FgjRWYX9c3gFqjsc8dnLNsBvjwsfPml3FqgzSibsKKQ',
     );
-
-    runApp(const MyApp());
   } catch (e) {
-    print('Initialization error: $e');
-    runApp(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to Initialize App',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    e.toString(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => main(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    print('Supabase initialization error: $e');
   }
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -77,29 +58,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'DreamScape Learning',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(elevation: 0, centerTitle: false),
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ),
-      home: const AuthWrapper(),
+      theme: AppTheme.lightTheme,
+      home: const SplashScreen(),
     );
   }
 }
@@ -141,7 +101,7 @@ class AuthWrapper extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Authentication Error',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.red.shade700,
@@ -151,7 +111,7 @@ class AuthWrapper extends StatelessWidget {
                   Text(
                     snapshot.error.toString(),
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: GoogleFonts.inter(color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -173,89 +133,194 @@ class AuthWrapper extends StatelessWidget {
 
         if (user != null && user.emailVerified) {
           return const MainNavigationScreen();
-        } else if (user != null && !user.emailVerified) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
+        }
+
+        if (user != null && !user.emailVerified) {
+          return _buildVerifyEmailScreen(context, user);
+        }
+
+        return const LoginScreen();
+      },
+    );
+  }
+
+  Widget _buildVerifyEmailScreen(BuildContext context, User user) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.email_rounded,
+                  size: 64,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Verify Your Email',
+                style: GoogleFonts.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'We sent a verification email to:\n${user.email}',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please check your inbox and click the verification link.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppTheme.textLight,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.email_rounded,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 24),
                     Text(
-                      'Verify Your Email',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                      '💡 Tips:',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.amber.shade800,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
                     Text(
-                      'Please verify your email address before continuing.\n'
-                          'Check your inbox and click the verification link.',
+                      '• Check your spam/junk folder\n'
+                          '• Wait a minute for the email to arrive\n'
+                          '• Click the link in the email to verify',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.amber.shade700,
+                        height: 1.5,
+                      ),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await FirebaseAuth.instance.currentUser!
-                              .sendEmailVerification();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                '✅ Verification email resent! Check your inbox.',
-                              ),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('❌ Error: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.email_outlined),
-                      label: const Text('Resend Verification Email'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () async {
-                        await FirebaseAuth.instance.signOut();
-                      },
-                      child: const Text('Sign Out'),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        } else {
-          return const LoginScreen();
-        }
-      },
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await user.sendEmailVerification();
+                          _showSnackBar(
+                            context,
+                            '✅ Verification email resent! Check your inbox.',
+                            Colors.green,
+                          );
+                        } catch (e) {
+                          _showSnackBar(
+                            context,
+                            '❌ Error: ${e.toString()}',
+                            Colors.red,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.email_outlined, size: 18),
+                      label: Text(
+                        'Resend Email',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await FirebaseAuth.instance.currentUser?.reload();
+                          final refreshedUser = FirebaseAuth.instance.currentUser;
+                          if (refreshedUser != null && refreshedUser.emailVerified) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MainNavigationScreen(),
+                              ),
+                            );
+                          } else {
+                            _showSnackBar(
+                              context,
+                              '⚠️ Email not verified yet. Please check your inbox.',
+                              Colors.orange,
+                            );
+                          }
+                        } catch (e) {
+                          _showSnackBar(
+                            context,
+                            '❌ Error checking verification: ${e.toString()}',
+                            Colors.red,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text(
+                        'Check Now',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
+                child: Text(
+                  'Sign Out',
+                  style: GoogleFonts.inter(color: AppTheme.textLight),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSnackBar(BuildContext context, String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 4),
+      ),
     );
   }
 }
 
-// Global key to access MainNavigationScreen state from anywhere
 final GlobalKey<MainNavigationScreenState> mainNavigationKey =
 GlobalKey<MainNavigationScreenState>();
 
@@ -285,154 +350,30 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  Future<void> _signOut() async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    try {
-      final authService = FirebaseAuthService();
-      await authService.signOut();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signed out successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error signing out: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+  void _onNavTap(int index) {
+    if (index == 5) {
+      // Profile - navigate to profile screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
+        ),
+      );
+      return;
     }
+    switchToTab(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('DreamScape'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        actions: [
-          if (user != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Text(
-                      user.displayName?.substring(0, 1).toUpperCase() ??
-                          user.email?.substring(0, 1).toUpperCase() ??
-                          'U',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    user.displayName ?? user.email?.split('@').first ?? 'User',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
-            },
-            tooltip: 'Profile',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
-            tooltip: 'Sign Out',
-          ),
-        ],
-      ),
       body: IndexedStack(
         index: _selectedIndex,
         children: _pages,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          if (index >= 0 && index < _pages.length) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Generate',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.folder_outlined),
-            selectedIcon: Icon(Icons.folder),
-            label: 'My Roadmaps',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Explorer',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Learn',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.route_outlined),
-            selectedIcon: Icon(Icons.route),
-            label: 'Path',
-          ),
-        ],
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onNavTap,
       ),
     );
   }

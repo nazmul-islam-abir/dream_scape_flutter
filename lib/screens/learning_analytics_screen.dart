@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/learning_tracker_service.dart';
 import '../screens/auth/firebase_auth_service.dart';
 import '../models/learning.dart';
-import 'daily_learning_screen.dart';
+import '../theme/app_theme.dart';
+import '../main.dart';
 
 class LearningAnalyticsScreen extends StatefulWidget {
   const LearningAnalyticsScreen({super.key});
@@ -58,13 +60,24 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Learning Analytics'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        title: Text(
+          'Analytics',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: AppTheme.textSecondary),
             onPressed: _loadData,
             tooltip: 'Refresh',
           ),
@@ -82,6 +95,27 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
         ),
       )
           : _buildBody(),
+      // Floating button to log learning - navigates to Log tab
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Navigate back to Log tab
+          Navigator.pop(context);
+          final state = mainNavigationKey.currentState;
+          if (state != null) {
+            state.switchToTab(3); // Log tab index
+          }
+        },
+        icon: const Icon(Icons.add),
+        label: Text(
+          'Log Learning',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+      ),
     );
   }
 
@@ -94,30 +128,30 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
             Icon(
               Icons.analytics_outlined,
               size: 64,
-              color: Colors.grey.shade400,
+              color: AppTheme.textLight,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No Learning Data Yet',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Start logging your daily learning to see analytics!',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: GoogleFonts.inter(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DailyLearningScreen(),
-                  ),
-                );
+                Navigator.pop(context);
+                final state = mainNavigationKey.currentState;
+                if (state != null) {
+                  state.switchToTab(3);
+                }
               },
               child: const Text('Log Today\'s Learning'),
             ),
@@ -143,6 +177,7 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
             _buildRecommendations(),
             const SizedBox(height: 16),
             _buildRecentLogs(),
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -155,84 +190,56 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     final totalTopics = _insights['totalTopicsLearned'] ?? 0;
     final totalTime = _insights['totalTimeSpent'] ?? 0;
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
+    return Row(
       children: [
-        _buildStatCard(
-          '📚',
-          '$totalDays',
-          'Days Learning',
-          Colors.blue.shade700,
+        Expanded(
+          child: _buildStatCard('📚', '$totalDays', 'Days', Colors.blue),
         ),
-        _buildStatCard(
-          '🔥',
-          '$streakDays',
-          'Day Streak',
-          Colors.orange.shade700,
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatCard('🔥', '$streakDays', 'Streak', Colors.orange),
         ),
-        _buildStatCard(
-          '📝',
-          '$totalTopics',
-          'Topics Learned',
-          Colors.green.shade700,
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatCard('📝', '$totalTopics', 'Topics', Colors.green),
         ),
-        _buildStatCard(
-          '⏰',
-          '${totalTime ~/ 60}h ${totalTime % 60}m',
-          'Total Time',
-          Colors.purple.shade700,
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatCard('⏰', '${totalTime ~/ 60}h', 'Time', Colors.purple),
         ),
       ],
     );
   }
 
   Widget _buildStatCard(String emoji, String value, String label, Color color) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.borderColor),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.1), Colors.white],
+      child: Column(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 24),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              color: AppTheme.textLight,
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -245,7 +252,6 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
       return const SizedBox.shrink();
     }
 
-    // Sort entries by date
     final sortedEntries = weeklyProgress.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -257,31 +263,27 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
       );
     }).toList();
 
-    // Calculate max value for chart
     final maxValue = data.isEmpty
         ? 2.0
         : data.map((e) => e.value).reduce((a, b) => a > b ? a : b) + 1;
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '📊 Weekly Progress',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 220,
+              height: 200,
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
@@ -312,17 +314,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
                                 data[index].day,
-                                style: TextStyle(
-                                  fontSize: 11,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade700,
+                                  color: AppTheme.textLight,
                                 ),
                               ),
                             );
                           }
                           return const Text('');
                         },
-                        reservedSize: 30,
+                        reservedSize: 28,
                       ),
                     ),
                     leftTitles: AxisTitles(
@@ -331,13 +333,13 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                         getTitlesWidget: (value, meta) {
                           return Text(
                             value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade700,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: AppTheme.textLight,
                             ),
                           );
                         },
-                        reservedSize: 30,
+                        reservedSize: 28,
                       ),
                     ),
                     topTitles: const AxisTitles(
@@ -353,7 +355,7 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                     horizontalInterval: 1,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.shade200,
+                        color: AppTheme.borderColor,
                         strokeWidth: 1,
                         dashArray: [5, 5],
                       );
@@ -361,21 +363,11 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                   ),
                   borderData: FlBorderData(
                     show: true,
-                    border: const Border(
-                      bottom: BorderSide(
-                        color: Colors.grey,
-                        width: 1,
-                      ),
-                      left: BorderSide(
-                        color: Colors.grey,
-                        width: 1,
-                      ),
-                      right: BorderSide(
-                        color: Colors.transparent,
-                      ),
-                      top: BorderSide(
-                        color: Colors.transparent,
-                      ),
+                    border: Border(
+                      bottom: BorderSide(color: AppTheme.borderColor, width: 1),
+                      left: BorderSide(color: AppTheme.borderColor, width: 1),
+                      right: const BorderSide(color: Colors.transparent),
+                      top: const BorderSide(color: Colors.transparent),
                     ),
                   ),
                   barGroups: data.asMap().entries.map((entry) {
@@ -386,13 +378,13 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                       barRods: [
                         BarChartRodData(
                           toY: item.value,
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 28,
+                          color: AppTheme.primaryColor,
+                          width: 24,
                           borderRadius: BorderRadius.circular(4),
                           backDrawRodData: BackgroundBarChartRodData(
                             show: true,
                             toY: 0,
-                            color: Colors.grey.shade200,
+                            color: AppTheme.borderColor,
                           ),
                         ),
                       ],
@@ -415,20 +407,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     }
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '💡 Learning Insights',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -437,17 +426,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getInsightColor(insight.type).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: _getInsightColor(insight.type).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: _getInsightColor(insight.type).withOpacity(0.2),
+                    color: _getInsightColor(insight.type).withOpacity(0.15),
                   ),
                 ),
                 child: Row(
                   children: [
                     Text(
                       insight.icon,
-                      style: const TextStyle(fontSize: 24),
+                      style: const TextStyle(fontSize: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -456,16 +445,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                         children: [
                           Text(
                             insight.title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                               color: _getInsightColor(insight.type),
                             ),
                           ),
                           Text(
                             insight.description,
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -508,20 +498,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     }
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '🎯 Recommended Next Steps',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -530,10 +517,10 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor(rec.priority).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: _getPriorityColor(rec.priority).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: _getPriorityColor(rec.priority).withOpacity(0.2),
+                    color: _getPriorityColor(rec.priority).withOpacity(0.15),
                   ),
                 ),
                 child: Row(
@@ -541,7 +528,7 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                     Icon(
                       Icons.arrow_forward_rounded,
                       color: _getPriorityColor(rec.priority),
-                      size: 20,
+                      size: 18,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -550,16 +537,17 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                         children: [
                           Text(
                             rec.topic,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
                               fontSize: 14,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           Text(
                             rec.reason,
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -568,7 +556,7 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
-                        vertical: 4,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: _getPriorityColor(rec.priority),
@@ -576,9 +564,9 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                       ),
                       child: Text(
                         rec.priority.toUpperCase(),
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -589,10 +577,7 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
             ),
             if (incompleteRecommendations.length > 3)
               TextButton(
-                onPressed: () {
-                  // Show all recommendations dialog
-                  _showAllRecommendationsDialog();
-                },
+                onPressed: _showAllRecommendationsDialog,
                 child: const Text('View All Recommendations'),
               ),
           ],
@@ -605,7 +590,11 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('All Recommendations'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'All Recommendations',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -620,12 +609,21 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                   Icons.arrow_forward_rounded,
                   color: _getPriorityColor(rec.priority),
                 ),
-                title: Text(rec.topic),
-                subtitle: Text(rec.reason),
+                title: Text(
+                  rec.topic,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: Text(
+                  rec.reason,
+                  style: GoogleFonts.inter(fontSize: 12),
+                ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 4,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: _getPriorityColor(rec.priority),
@@ -633,9 +631,9 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
                   ),
                   child: Text(
                     rec.priority.toUpperCase(),
-                    style: const TextStyle(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -671,62 +669,62 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     final recentLogs = _logs.take(5).toList();
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '📝 Recent Learning Logs',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             ...recentLogs.map(
                   (log) => ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: _getDifficultyColor(
-                    log.difficultyLevel,
-                  ).withOpacity(0.2),
+                  radius: 16,
+                  backgroundColor: _getDifficultyColor(log.difficultyLevel)
+                      .withOpacity(0.15),
                   child: Text(
                     log.difficultyLevel.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: _getDifficultyColor(log.difficultyLevel),
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ),
                 title: Text(
                   log.topic,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
                   '${log.timeSpentMinutes} min • ${_formatDate(log.date)}',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: AppTheme.textLight,
                   ),
                 ),
                 trailing: Text(
                   '${log.timeSpentMinutes}m',
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
+                    color: AppTheme.primaryColor,
                   ),
                 ),
-                onTap: () {
-                  // Show log details
-                  _showLogDetailsDialog(log);
-                },
+                onTap: () => _showLogDetailsDialog(log),
+                dense: true,
               ),
             ),
           ],
@@ -739,7 +737,11 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(log.topic),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          log.topic,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -747,60 +749,101 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
             if (log.category != null)
               Text(
                 '📂 Category: ${log.category}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
               ),
             if (log.subcategory != null)
               Text(
                 '📌 Subcategory: ${log.subcategory}',
-                style: const TextStyle(fontSize: 13),
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
               ),
             const SizedBox(height: 8),
             if (log.description != null) ...[
-              const Text(
+              Text(
                 'Description:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
-              Text(log.description!),
+              Text(
+                log.description!,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
               const SizedBox(height: 8),
             ],
             Row(
               children: [
-                const Icon(Icons.timer, size: 16),
+                const Icon(Icons.timer, size: 16, color: AppTheme.textLight),
                 const SizedBox(width: 4),
-                Text('${log.timeSpentMinutes} minutes'),
+                Text(
+                  '${log.timeSpentMinutes} minutes',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
                 const SizedBox(width: 16),
-                const Icon(Icons.assessment, size: 16),
+                const Icon(Icons.assessment, size: 16, color: AppTheme.textLight),
                 const SizedBox(width: 4),
-                Text(log.difficultyLevel),
+                Text(
+                  log.difficultyLevel,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
             if (log.resourcesUsed.isNotEmpty) ...[
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Resources:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
               ...log.resourcesUsed.map(
-                    (resource) => Text('• $resource'),
+                    (resource) => Text(
+                  '• $resource',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ),
             ],
             if (log.codeSnippets != null) ...[
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Code Snippet:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppTheme.backgroundColor,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.borderColor),
                 ),
                 child: SelectableText(
                   log.codeSnippets!,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
+                  style: GoogleFonts.inter(
+
                     fontSize: 12,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ),
@@ -808,9 +851,9 @@ class _LearningAnalyticsScreenState extends State<LearningAnalyticsScreen> {
             const SizedBox(height: 8),
             Text(
               '📅 ${_formatDate(log.date)}',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: AppTheme.textLight,
               ),
             ),
           ],

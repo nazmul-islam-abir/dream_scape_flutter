@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../screens/auth/firebase_auth_service.dart';
+import '../theme/app_theme.dart';
 import 'roadmap_explorer_screen.dart';
 import 'main.dart';
 
@@ -61,15 +63,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
 
   Future<void> _deleteRoadmap(String id) async {
     final userId = _authService.getUserId();
-    if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to delete roadmaps'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    if (userId == null) return;
 
     try {
       await _supabase
@@ -86,6 +80,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
         const SnackBar(
           content: Text('Roadmap deleted successfully'),
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -93,6 +88,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
         SnackBar(
           content: Text('Error deleting roadmap: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -116,15 +112,23 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('My Roadmaps'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        title: Text(
+          'My Roadmaps',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadRoadmaps,
             tooltip: 'Refresh',
+            color: AppTheme.textSecondary,
           ),
         ],
       ),
@@ -151,14 +155,14 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               'Error loading roadmaps',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -167,7 +171,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
               child: Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
+                style: GoogleFonts.inter(color: AppTheme.textSecondary),
               ),
             ),
             const SizedBox(height: 16),
@@ -186,30 +190,26 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.folder_open, size: 48, color: AppTheme.textLight),
             const SizedBox(height: 16),
             Text(
               'No Roadmaps Yet',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Generate your first roadmap from the "Generate" tab!',
-              style: TextStyle(color: Colors.grey.shade500),
+              'Generate your first roadmap from the Home tab!',
+              style: GoogleFonts.inter(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _switchToGenerateTab,
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const Icon(Icons.add),
               label: const Text('Generate New Roadmap'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),
@@ -217,7 +217,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: _roadmaps.length,
       itemBuilder: (context, index) {
         final roadmap = _roadmaps[index];
@@ -229,7 +229,6 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
               Navigator.push(
@@ -255,9 +254,11 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                           children: [
                             Text(
                               title,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                                letterSpacing: -0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -271,15 +272,14 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: _getDifficultyColor(
-                                      difficulty,
-                                    ).withOpacity(0.2),
+                                    color: _getDifficultyColor(difficulty)
+                                        .withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     difficulty,
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       color: _getDifficultyColor(difficulty),
                                     ),
@@ -288,9 +288,9 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   _formatDate(createdAt),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade500,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppTheme.textLight,
                                   ),
                                 ),
                               ],
@@ -299,9 +299,10 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
-                          color: Colors.red,
+                          color: Colors.red.shade300,
+                          size: 20,
                         ),
                         onPressed: () => _showDeleteConfirmation(
                           context,
@@ -324,19 +325,19 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                               children: [
                                 Text(
                                   'Progress',
-                                  style: TextStyle(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                                 Text(
                                   '${(progress * 100).toStringAsFixed(0)}%',
-                                  style: TextStyle(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
                                     color: progress == 1.0
-                                        ? Colors.green
-                                        : Theme.of(context).colorScheme.primary,
+                                        ? AppTheme.secondaryColor
+                                        : AppTheme.primaryColor,
                                   ),
                                 ),
                               ],
@@ -346,33 +347,32 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: progress,
-                                minHeight: 6,
-                                backgroundColor: Colors.grey.shade200,
+                                minHeight: 4,
+                                backgroundColor: AppTheme.borderColor,
                                 color: progress == 1.0
-                                    ? Colors.green
-                                    : Theme.of(context).colorScheme.primary,
+                                    ? AppTheme.secondaryColor
+                                    : AppTheme.primaryColor,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 10,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.1),
+                          color: AppTheme.primaryColor.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${_getModuleCount(fullData)} modules',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.primary,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -396,7 +396,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
       case 'advanced':
         return Colors.red;
       default:
-        return Colors.blue;
+        return AppTheme.primaryColor;
     }
   }
 
@@ -427,8 +427,14 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Roadmap'),
-        content: Text('Are you sure you want to delete "$title"?'),
+        title: Text(
+          'Delete Roadmap',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$title"?',
+          style: GoogleFonts.inter(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

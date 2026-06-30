@@ -1,9 +1,12 @@
+// ============== learning_path_screen.dart ==============
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/learning_tracker_service.dart';
 import '../screens/auth/firebase_auth_service.dart';
 import '../models/learning.dart';
 import '../models/learning_category.dart';
+import '../theme/app_theme.dart';
 import 'daily_learning_screen.dart';
 import 'learning_analytics_screen.dart';
 
@@ -56,13 +59,20 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Learning Path'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        title: Text(
+          'My Progress',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.analytics_outlined),
+            icon: Icon(Icons.analytics_outlined, color: AppTheme.textSecondary),
             onPressed: () {
               Navigator.push(
                 context,
@@ -73,6 +83,18 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             },
             tooltip: 'View Analytics',
           ),
+          IconButton(
+            icon: Icon(Icons.add_box_outlined, color: AppTheme.textSecondary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DailyLearningScreen(),
+                ),
+              );
+            },
+            tooltip: 'Log Learning',
+          ),
         ],
       ),
       body: _isLoading
@@ -82,7 +104,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Loading your learning path...'),
+            Text('Loading your progress...'),
           ],
         ),
       )
@@ -97,9 +119,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           ).then((_) => _loadData());
         },
         icon: const Icon(Icons.add),
-        label: const Text('Log Learning'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        label: Text(
+          'Log Learning',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
       ),
     );
   }
@@ -110,26 +138,24 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.route_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.route_outlined, size: 48, color: AppTheme.textLight),
             const SizedBox(height: 16),
-            const Text(
-              'No Learning Path Yet',
-              style: TextStyle(
+            Text(
+              'No Learning Data Yet',
+              style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Start logging your daily learning to build your path!',
-              style: TextStyle(color: Colors.grey.shade600),
+              'Start logging your daily learning to track your progress!',
+              style: GoogleFonts.inter(color: AppTheme.textSecondary),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -138,7 +164,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   ),
                 );
               },
-              child: const Text('Log Today\'s Learning'),
+              icon: const Icon(Icons.add),
+              label: const Text('Log Today\'s Learning'),
             ),
           ],
         ),
@@ -152,6 +179,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         children: [
           _buildOverallProgress(),
           const SizedBox(height: 16),
+          Text(
+            'Your Learning Paths',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
           ..._learningPaths.map((path) => _buildLearningPathCard(path)).toList(),
           const SizedBox(height: 16),
           _buildCategoryDistribution(),
@@ -172,40 +208,40 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     final totalTime = _categorySummary['totalTime'] ?? 0;
 
     return Card(
-      elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '📊 Overall Progress',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 18,
+                color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Completion',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: AppTheme.textLight,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${(totalProgress * 100).toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          fontSize: 24,
+                        style: GoogleFonts.inter(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: AppTheme.primaryColor,
                         ),
                       ),
                     ],
@@ -215,20 +251,20 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Topics Learned',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: AppTheme.textLight,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$totalLogs',
-                        style: TextStyle(
-                          fontSize: 24,
+                        style: GoogleFonts.inter(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: AppTheme.secondaryColor,
                         ),
                       ),
                     ],
@@ -238,18 +274,18 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Total Time',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: AppTheme.textLight,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${totalTime ~/ 60}h ${totalTime % 60}m',
-                        style: TextStyle(
-                          fontSize: 24,
+                        style: GoogleFonts.inter(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.orange,
                         ),
@@ -259,14 +295,14 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: totalProgress,
-                minHeight: 8,
-                backgroundColor: Colors.grey.shade200,
-                color: Theme.of(context).colorScheme.primary,
+                minHeight: 6,
+                backgroundColor: AppTheme.borderColor,
+                color: AppTheme.primaryColor,
               ),
             ),
           ],
@@ -290,36 +326,39 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     final progress = path.progress;
 
     return Card(
-      elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: Color(int.parse(category.color.substring(1, 7), radix: 16))
-                .withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
+                .withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Text(
               category.icon,
-              style: const TextStyle(fontSize: 20),
+              style: const TextStyle(fontSize: 22),
             ),
           ),
         ),
         title: Text(
           category.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: AppTheme.textPrimary,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '${(progress * 100).toStringAsFixed(0)}% complete',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 12,
-                color: progress >= 0.8 ? Colors.green : Colors.grey,
+                color: progress >= 0.8 ? AppTheme.secondaryColor : AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -328,8 +367,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 4,
-                backgroundColor: Colors.grey.shade200,
-                color: progress >= 0.8 ? Colors.green : Theme.of(context).colorScheme.primary,
+                backgroundColor: AppTheme.borderColor,
+                color: progress >= 0.8 ? AppTheme.secondaryColor : AppTheme.primaryColor,
               ),
             ),
           ],
@@ -341,11 +380,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (path.prerequisites.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     '📋 Prerequisites:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
                       fontSize: 14,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -355,7 +395,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                       child: Row(
                         children: [
                           const Text('• '),
-                          Expanded(child: Text(prereq)),
+                          Expanded(
+                            child: Text(
+                              prereq,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -363,11 +411,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   const SizedBox(height: 8),
                 ],
                 if (path.recommendedTopics.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     '🎯 Recommended Topics:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
                       fontSize: 14,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -376,8 +425,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                       padding: const EdgeInsets.only(left: 8, bottom: 2),
                       child: Row(
                         children: [
-                          const Icon(Icons.arrow_right, size: 16),
-                          Expanded(child: Text(topic)),
+                          Icon(Icons.arrow_right, size: 16, color: AppTheme.primaryColor),
+                          Expanded(
+                            child: Text(
+                              topic,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -385,11 +442,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   const SizedBox(height: 8),
                 ],
                 if (path.nextSteps.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     '🚀 Next Steps:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
                       fontSize: 14,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -398,8 +456,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                       padding: const EdgeInsets.only(left: 8, bottom: 2),
                       child: Row(
                         children: [
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
-                          Expanded(child: Text(step)),
+                          Icon(Icons.star, size: 16, color: Colors.amber),
+                          Expanded(
+                            child: Text(
+                              step,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -424,17 +490,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
-      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '📈 Learning Distribution',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -455,14 +521,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                     Expanded(
                       child: Text(
                         entry.key,
-                        style: const TextStyle(fontSize: 14),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                     ),
                     Text(
                       '${entry.value} topics',
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.textLight,
                       ),
                     ),
                   ],
@@ -481,20 +550,20 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     final categories = (_categorySummary['categories'] as Map<String, int>?)?.length ?? 0;
 
     return Card(
-      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '📊 Learning Summary',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
                 fontSize: 16,
+                color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -529,23 +598,21 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Widget _buildSummaryItem(String emoji, String value, String label) {
     return Column(
       children: [
-        Text(
-          emoji,
-          style: const TextStyle(fontSize: 24),
-        ),
+        Text(emoji, style: const TextStyle(fontSize: 24)),
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
           ),
         ),
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 11,
-            color: Colors.grey.shade600,
+            color: AppTheme.textLight,
           ),
         ),
       ],

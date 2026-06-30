@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/learning_tracker_service.dart';
 import '../screens/auth/firebase_auth_service.dart';
+import '../theme/app_theme.dart';
 import 'learning_analytics_screen.dart';
+import '../main.dart';
+import '../widgets/bottom_nav_bar.dart';
+import 'auth/profile_screen.dart';
 
 class DailyLearningScreen extends StatefulWidget {
   const DailyLearningScreen({super.key});
@@ -45,22 +50,12 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
   Future<void> _submitLearningLog() async {
     final topic = _topicController.text.trim();
     if (topic.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter what you learned'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnackBar('Please enter what you learned', Colors.orange);
       return;
     }
 
     if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnackBar('Please sign in first', Colors.orange);
       return;
     }
 
@@ -92,12 +87,7 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Learning log saved!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _showSnackBar('✅ Learning logged successfully!', AppTheme.secondaryColor);
 
         _topicController.clear();
         _descriptionController.clear();
@@ -110,9 +100,7 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        _showSnackBar('Error: $e', Colors.red);
       }
     } finally {
       if (mounted) {
@@ -121,16 +109,49 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
     }
   }
 
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _onNavTap(int index) {
+    if (index == 5) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+      return;
+    }
+    final state = mainNavigationKey.currentState;
+    if (state != null) {
+      state.switchToTab(index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Daily Learning Log'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        title: Text(
+          'Log Learning',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.analytics_outlined),
+            icon: Icon(Icons.analytics_outlined, color: AppTheme.textSecondary),
             onPressed: () {
               Navigator.push(
                 context,
@@ -141,6 +162,16 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
             },
             tooltip: 'View Analytics',
           ),
+          IconButton(
+            icon: Icon(Icons.timeline_outlined, color: AppTheme.textSecondary),
+            onPressed: () {
+              final state = mainNavigationKey.currentState;
+              if (state != null) {
+                state.switchToTab(4);
+              }
+            },
+            tooltip: 'View Progress',
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -148,35 +179,50 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Card
             Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     Icon(
                       Icons.school_rounded,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.primary,
+                      size: 48,
+                      color: AppTheme.primaryColor,
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'What did you learn today?',
-                      style: TextStyle(
-                        fontSize: 22,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateTime.now().toString().split(' ').first,
-                      style: TextStyle(
+                      'Log your daily learning to track progress',
+                      style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '📅 ${DateTime.now().toString().split(' ').first}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -185,60 +231,44 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Topic Input
             TextField(
               controller: _topicController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'What did you learn? *',
                 hintText: 'e.g., Flutter Provider Pattern',
-                prefixIcon: const Icon(Icons.bolt_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                prefixIcon: Icon(Icons.bolt_outlined),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Description Input
             TextField(
               controller: _descriptionController,
               maxLines: 3,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Description (optional)',
                 hintText: 'What did you learn and how does it work?',
-                prefixIcon: const Icon(Icons.description_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                prefixIcon: Icon(Icons.description_outlined),
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 16),
 
-            // Time Spent Card
             Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.timer_outlined),
-                        SizedBox(width: 8),
+                        Icon(Icons.timer_outlined, color: AppTheme.primaryColor),
+                        const SizedBox(width: 8),
                         Text(
                           'Time Spent',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ],
@@ -258,7 +288,7 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
                                 _timeSpentMinutes = value.round();
                               });
                             },
-                            activeColor: Theme.of(context).colorScheme.primary,
+                            activeColor: AppTheme.primaryColor,
                           ),
                         ),
                         Container(
@@ -267,12 +297,12 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppTheme.primaryColor,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '$_timeSpentMinutes min',
-                            style: const TextStyle(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -287,26 +317,22 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Difficulty Level Card
             Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.assessment_outlined),
-                        SizedBox(width: 8),
+                        Icon(Icons.assessment_outlined, color: AppTheme.primaryColor),
+                        const SizedBox(width: 8),
                         Text(
                           'Difficulty Level',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ],
@@ -333,10 +359,10 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
                         return ChoiceChip(
                           label: Text(
                             level.toUpperCase(),
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: isSelected ? Colors.white : getColor(),
                               fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                           selected: isSelected,
@@ -363,100 +389,112 @@ class _DailyLearningScreenState extends State<DailyLearningScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Code Snippets Input
             TextField(
               controller: _codeController,
               maxLines: 4,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Code Snippets (optional)',
                 hintText: 'Paste any code you wrote or learned',
-                prefixIcon: const Icon(Icons.code_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                prefixIcon: Icon(Icons.code_outlined),
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 16),
 
-            // Resources Input
             TextField(
               controller: _resourcesController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Resources Used (optional)',
                 hintText: 'e.g., YouTube, Documentation, Course (comma separated)',
-                prefixIcon: const Icon(Icons.link_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                prefixIcon: Icon(Icons.link_outlined),
               ),
             ),
             const SizedBox(height: 24),
 
-            // Submit Button
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submitLearningLog,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submitLearningLog,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                elevation: 2,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
-              )
-                  : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.save_outlined),
-                  SizedBox(width: 12),
-                  Text(
-                    'Save Learning Log',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                child: _isLoading
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
-                ],
+                )
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.save_outlined),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Save Learning Log',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Analytics Button
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LearningAnalyticsScreen(),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LearningAnalyticsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.analytics_outlined, size: 18),
+                    label: Text(
+                      'Analytics',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.analytics_outlined),
-              label: const Text('View Analytics'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final state = mainNavigationKey.currentState;
+                      if (state != null) {
+                        state.switchToTab(4);
+                      }
+                    },
+                    icon: const Icon(Icons.timeline_outlined, size: 18),
+                    label: Text(
+                      'Progress',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 3,
+        onTap: _onNavTap,
       ),
     );
   }
