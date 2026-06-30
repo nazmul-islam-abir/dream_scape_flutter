@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/post.dart';
+import '../models/user.dart';
 import '../services/social_service.dart';
+import '../services/user_service.dart';
 import '../screens/auth/firebase_auth_service.dart';
 import 'create_post_screen.dart';
 import 'post_detail_screen.dart';
+import 'user_profile_screen.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
@@ -14,19 +17,33 @@ class ExplorerScreen extends StatefulWidget {
   State<ExplorerScreen> createState() => _ExplorerScreenState();
 }
 
-class _ExplorerScreenState extends State<ExplorerScreen> {
+class _ExplorerScreenState extends State<ExplorerScreen> with SingleTickerProviderStateMixin {
   final SocialService _socialService = SocialService();
+  final UserService _userService = UserService();
   final FirebaseAuthService _authService = FirebaseAuthService();
+
+  late TabController _tabController;
+
   List<Post> _posts = [];
+  List<UserRecommendation> _recommendations = [];
   bool _isLoading = true;
+  bool _isLoadingRecommendations = true;
   String? _errorMessage;
   String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _currentUserId = _authService.getUserId();
     _loadPosts();
+    _loadRecommendations();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPosts() async {
@@ -46,6 +63,23 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadRecommendations() async {
+    if (_currentUserId == null) return;
+
+    setState(() => _isLoadingRecommendations = true);
+
+    try {
+      final recommendations = await _userService.getRecommendations(_currentUserId!);
+      setState(() {
+        _recommendations = recommendations;
+        _isLoadingRecommendations = false;
+      });
+    } catch (e) {
+      print('Error loading recommendations: $e');
+      setState(() => _isLoadingRecommendations = false);
     }
   }
 
@@ -86,6 +120,13 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     ).then((_) => _loadPosts());
   }
 
+  void _navigateToUserProfile(String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => UserProfileScreen(userId: userId)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,16 +134,33 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
         title: const Text('Explorer'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadPosts,
-            tooltip: 'Refresh',
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Theme.of(context).colorScheme.primary,
+            child: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Feed'),
+                Tab(text: 'People'),
+              ],
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+            ),
           ),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildFeed(),
+          _buildPeople(),
         ],
       ),
-      body: _buildBody(),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
             context,
@@ -113,11 +171,12 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
         label: const Text('New Post'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-      ),
+      )
+          : null,
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildFeed() {
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -218,6 +277,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
             currentUserId: _currentUserId,
             onLike: () => _toggleLike(post),
             onComment: () => _navigateToPostDetail(post),
+            onProfileTap: () => _navigateToUserProfile(post.userId),
             onDelete: () async {
               if (_currentUserId == post.userId) {
                 final confirm = await showDialog<bool>(
@@ -271,6 +331,91 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
       ),
     );
   }
+
+  Widget _buildPeople() {
+    if (_isLoadingRecommendations) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Finding people...'),
+          ],
+        ),
+      );
+    }
+
+    if (_recommendations.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'No Recommendations Yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start learning and the app will recommend people with similar interests!',
+              style: TextStyle(color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadRecommendations,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _recommendations.length,
+        itemBuilder: (context, index) {
+          final rec = _recommendations[index];
+          return _RecommendationCard(
+            recommendation: rec,
+            currentUserId: _currentUserId,
+            onTap: () => _navigateToUserProfile(rec.userId),
+            onFollowToggle: () async {
+              if (_currentUserId == null) return;
+              try {
+                if (rec.isFollowing) {
+                  await _userService.unfollowUser(_currentUserId!, rec.userId);
+                } else {
+                  await _userService.followUser(_currentUserId!, rec.userId);
+                }
+                setState(() {
+                  _recommendations[index] = UserRecommendation(
+                    userId: rec.userId,
+                    username: rec.username,
+                    avatarUrl: rec.avatarUrl,
+                    bio: rec.bio,
+                    interests: rec.interests,
+                    mutualTopics: rec.mutualTopics,
+                    isFollowing: !rec.isFollowing,
+                  );
+                });
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
 }
 
 // ===================== POST CARD WIDGET =====================
@@ -280,6 +425,7 @@ class _PostCard extends StatelessWidget {
   final String? currentUserId;
   final VoidCallback onLike;
   final VoidCallback onComment;
+  final VoidCallback onProfileTap;
   final VoidCallback onDelete;
 
   const _PostCard({
@@ -287,6 +433,7 @@ class _PostCard extends StatelessWidget {
     required this.currentUserId,
     required this.onLike,
     required this.onComment,
+    required this.onProfileTap,
     required this.onDelete,
   });
 
@@ -317,48 +464,51 @@ class _PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Text(
-                    post.username.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+            // Header with Profile Tap
+            InkWell(
+              onTap: onProfileTap,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text(
+                      post.username.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.username,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      Text(
-                        _timeAgo(post.createdAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
+                        Text(
+                          _timeAgo(post.createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if (isOwnPost)
-                  IconButton(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    onPressed: onDelete,
-                    tooltip: 'Delete post',
-                  ),
-              ],
+                  if (isOwnPost)
+                    IconButton(
+                      icon: const Icon(Icons.more_vert, size: 20),
+                      onPressed: onDelete,
+                      tooltip: 'Delete post',
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -388,49 +538,14 @@ class _PostCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Image
-            if (post.imageUrl != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  post.imageUrl!,
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 200,
-                      color: Colors.grey.shade200,
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image, size: 48),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
             // Actions
             Row(
               children: [
-                // Like Button
                 InkWell(
                   onTap: onLike,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         Icon(
@@ -457,15 +572,11 @@ class _PostCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Comment Button
                 InkWell(
                   onTap: onComment,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         Icon(
@@ -486,7 +597,6 @@ class _PostCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // Share Button (optional)
                 IconButton(
                   icon: Icon(Icons.share_outlined, color: Colors.grey.shade600),
                   onPressed: () {
@@ -497,6 +607,159 @@ class _PostCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===================== RECOMMENDATION CARD WIDGET =====================
+
+class _RecommendationCard extends StatelessWidget {
+  final UserRecommendation recommendation;
+  final String? currentUserId;
+  final VoidCallback onTap;
+  final VoidCallback onFollowToggle;
+
+  const _RecommendationCard({
+    required this.recommendation,
+    required this.currentUserId,
+    required this.onTap,
+    required this.onFollowToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isOwnProfile = currentUserId == recommendation.userId;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: Text(
+                  recommendation.username.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          recommendation.username,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (recommendation.mutualTopics > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.green.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              '${recommendation.mutualTopics} 🎯',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (recommendation.bio != null) ...[
+                      Text(
+                        recommendation.bio!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (recommendation.interests.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: recommendation.interests.take(3).map((interest) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              interest,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (!isOwnProfile)
+                OutlinedButton(
+                  onPressed: onFollowToggle,
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: recommendation.isFollowing
+                        ? Colors.grey.shade100
+                        : Theme.of(context).colorScheme.primary,
+                    foregroundColor: recommendation.isFollowing
+                        ? Colors.grey.shade600
+                        : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    side: BorderSide(
+                      color: recommendation.isFollowing
+                          ? Colors.grey.shade300
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  child: Text(
+                    recommendation.isFollowing ? 'Following' : 'Follow',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
