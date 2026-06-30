@@ -6,7 +6,7 @@ import 'project_review_screen.dart';
 
 class RoadmapExplorerScreen extends StatefulWidget {
   final Map<String, dynamic> rawRoadmapData;
-  final String? roadmapId; // Optional for future progress tracking
+  final String? roadmapId;
 
   const RoadmapExplorerScreen({
     super.key,
@@ -22,12 +22,79 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
   late Roadmap _roadmap;
   double _progressValue = 0.0;
   final _supabase = Supabase.instance.client;
+  bool _isSaving = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _roadmap = Roadmap.fromJson(widget.rawRoadmapData, "generated_roadmap_id");
-    _calculateProgress();
+    _initializeRoadmap();
+  }
+
+  Future<void> _initializeRoadmap() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Parse the roadmap data
+      _roadmap = Roadmap.fromJson(
+        widget.rawRoadmapData,
+        "generated_roadmap_id",
+      );
+
+      // Load progress from database
+      await _loadProgressFromDatabase();
+
+      // Calculate progress
+      _calculateProgress();
+
+      setState(() => _isLoading = false);
+    } catch (e) {
+      print('Error initializing roadmap: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Load saved progress from database
+  Future<void> _loadProgressFromDatabase() async {
+    final roadmapId = widget.roadmapId;
+    if (roadmapId == null || roadmapId.isEmpty) {
+      return;
+    }
+
+    try {
+      final response = await _supabase
+          .from('user_roadmaps')
+          .select('full_data, progress')
+          .eq('id', roadmapId)
+          .single();
+
+      if (response != null && response['full_data'] != null) {
+        final savedData = response['full_data'] as Map<String, dynamic>;
+        final savedModules = savedData['modules'] as List? ?? [];
+
+        // Update topic completion status from saved data
+        for (
+          var i = 0;
+          i < _roadmap.modules.length && i < savedModules.length;
+          i++
+        ) {
+          final savedModule = savedModules[i];
+          final savedTopics = savedModule['topics'] as List? ?? [];
+
+          for (
+            var j = 0;
+            j < _roadmap.modules[i].topics.length && j < savedTopics.length;
+            j++
+          ) {
+            final savedTopic = savedTopics[j];
+            final isCompleted = savedTopic['isCompleted'] ?? false;
+            _roadmap.modules[i].topics[j].isCompleted = isCompleted;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading progress: $e');
+    }
   }
 
   void _calculateProgress() {
@@ -45,54 +112,106 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
       _progressValue = totalTopics == 0 ? 0.0 : completedTopics / totalTopics;
     });
 
-    // Optionally update progress in Supabase
-    _updateProgressInSupabase();
+    // Save progress to database
+    _saveProgressToDatabase();
   }
 
-  Future<void> _updateProgressInSupabase() async {
-    // Early return if roadmapId is null or empty
+  Future<void> _saveProgressToDatabase() async {
     final roadmapId = widget.roadmapId;
-    if (roadmapId == null || roadmapId.isEmpty) return;
+    if (roadmapId == null || roadmapId.isEmpty || _isSaving) return;
+
+    _isSaving = true;
 
     try {
-      // Calculate completion percentage
-      int totalTopics = 0;
-      int completedTopics = 0;
-
-      for (var module in _roadmap.modules) {
-        for (var topic in module.topics) {
-          totalTopics++;
-          if (topic.isCompleted) completedTopics++;
-        }
-      }
-
-      final progress = totalTopics == 0 ? 0.0 : completedTopics / totalTopics;
-
-      // Update the roadmap progress in Supabase
-      await _supabase
+      // Get current full_data from database
+      final response = await _supabase
           .from('user_roadmaps')
-          .update({
-            'progress': progress,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', roadmapId); // Now roadmapId is guaranteed non-null
+          .select('full_data')
+          .eq('id', roadmapId)
+          .single();
+
+      if (response != null && response['full_data'] != null) {
+        // Update the stored data with current progress
+        final updatedData = response['full_data'] as Map<String, dynamic>;
+        final modules = updatedData['modules'] as List? ?? [];
+
+        // Update each module's topics with completion status
+        for (
+          var i = 0;
+          i < modules.length && i < _roadmap.modules.length;
+          i++
+        ) {
+          final module = modules[i];
+          final topics = module['topics'] as List? ?? [];
+
+          for (
+            var j = 0;
+            j < topics.length && j < _roadmap.modules[i].topics.length;
+            j++
+          ) {
+            topics[j]['isCompleted'] =
+                _roadmap.modules[i].topics[j].isCompleted;
+          }
+        }
+
+        // Update the database with new progress
+        await _supabase
+            .from('user_roadmaps')
+            .update({
+              'full_data': updatedData,
+              'progress': _progressValue,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', roadmapId);
+      }
     } catch (e) {
-      print('Error updating progress: $e');
-      // Don't show error to user, it's a background update
+      print('Error saving progress: $e');
+    } finally {
+      _isSaving = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading roadmap...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_roadmap.title),
         elevation: 1,
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          if (_isSaving)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
+          // Progress Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -134,21 +253,30 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  "Difficulty: ${_roadmap.difficulty.toUpperCase()}",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Difficulty: ${_roadmap.difficulty.toUpperCase()}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (widget.roadmapId != null)
+                      Text(
+                        "ID: ${widget.roadmapId!.substring(0, 8)}...",
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
                 ),
-                if (widget.roadmapId != null)
-                  Text(
-                    "ID: ${widget.roadmapId!.substring(0, 8)}...",
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
               ],
             ),
           ),
+          // Modules List
           Expanded(
             child: ListView.builder(
               itemCount: _roadmap.modules.length,
@@ -182,6 +310,7 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
                     ),
                     children: [
                       const Divider(height: 1),
+                      // Topics List
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -200,9 +329,13 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
                             ),
                             title: Text(
                               topic.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
+                                decoration: topic.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: topic.isCompleted ? Colors.grey : null,
                               ),
                             ),
                             subtitle: Text(
@@ -221,12 +354,16 @@ class _RoadmapExplorerScreenState extends State<RoadmapExplorerScreen> {
                                       courseContext: _roadmap.title,
                                     ),
                                   ),
-                                );
+                                ).then((_) {
+                                  // Refresh progress when returning from learning
+                                  _calculateProgress();
+                                });
                               },
                             ),
                           );
                         },
                       ),
+                      // Capstone Project Section
                       Container(
                         margin: const EdgeInsets.all(16),
                         padding: const EdgeInsets.all(16),

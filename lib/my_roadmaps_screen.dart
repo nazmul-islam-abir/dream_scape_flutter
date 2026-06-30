@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../screens/auth/firebase_auth_service.dart';
 import 'roadmap_explorer_screen.dart';
 import 'main.dart';
 
@@ -12,6 +14,7 @@ class MyRoadmapsScreen extends StatefulWidget {
 
 class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
   final _supabase = Supabase.instance.client;
+  final _authService = FirebaseAuthService();
   List<Map<String, dynamic>> _roadmaps = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -23,6 +26,15 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
   }
 
   Future<void> _loadRoadmaps() async {
+    final userId = _authService.getUserId();
+    if (userId == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Please sign in to view your roadmaps';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -32,6 +44,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
       final response = await _supabase
           .from('user_roadmaps')
           .select()
+          .eq('user_id', userId)
           .order('created_at', ascending: false);
 
       setState(() {
@@ -47,11 +60,28 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
   }
 
   Future<void> _deleteRoadmap(String id) async {
+    final userId = _authService.getUserId();
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to delete roadmaps'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
-      await _supabase.from('user_roadmaps').delete().eq('id', id);
+      await _supabase
+          .from('user_roadmaps')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+
       setState(() {
         _roadmaps.removeWhere((roadmap) => roadmap['id'] == id);
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Roadmap deleted successfully'),
@@ -75,7 +105,6 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
     }
   }
 
-  // Helper method to safely get progress as double
   double _getProgress(dynamic progressValue) {
     if (progressValue == null) return 0.0;
     if (progressValue is double) return progressValue;
@@ -195,10 +224,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
         final fullData = roadmap['full_data'] as Map<String, dynamic>? ?? {};
         final title = fullData['roadmap_title'] ?? 'Untitled Roadmap';
         final difficulty = fullData['difficulty'] ?? 'Beginner';
-
-        // FIX: Safely convert progress to double
         final progress = _getProgress(roadmap['progress']);
-
         final createdAt = DateTime.parse(roadmap['created_at'] as String);
 
         return Card(
@@ -400,6 +426,7 @@ class _MyRoadmapsScreenState extends State<MyRoadmapsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Roadmap'),
         content: Text('Are you sure you want to delete "$title"?'),
         actions: [

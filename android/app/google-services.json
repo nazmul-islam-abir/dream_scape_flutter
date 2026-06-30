@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "790663387405",
+    "project_id": "dream-scape-dfde3",
+    "storage_bucket": "dream-scape-dfde3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790663387405:android:50fbed2b072b806994b844",
+        "android_client_info": {
+          "package_name": "com.example.dream_scape"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "790663387405-pug3pdhf8uvum3dm66s9po1abbmkrhhu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIjpGg3EB-gRn3nHUO0ifZJeqXOW3Vg6M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790663387405-nro362r3a4nfrn0vj96thjhhp4ujer83.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "790663387405-aiam7660jhglkevu56fqf3d34clpv49g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.dreamsScape"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
